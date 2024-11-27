@@ -1,0 +1,43 @@
+trigger:
+  - master  # Replace with your branch name
+
+pool:
+  vmImage: 'ubuntu-latest'  # Use appropriate build agent
+
+variables:
+  APPSCAN_KEY: $(APPSCAN_KEY)
+  APPSCAN_SECRET: $(APPSCAN_SECRET)
+
+steps:
+  - task: UsePythonVersion@1
+    inputs:
+      versionSpec: '3.x'
+    displayName: 'Set Python Version'
+
+  - script: |
+      echo "Installing AppScan CLI..."
+      curl -L https://cloud.appscan.com/downloads/appscan.sh | bash
+    displayName: 'Install AppScan CLI'
+
+  - script: |
+      echo "Running SAST and SCA Scans..."
+      appscan auth --key=$(APPSCAN_KEY) --secret=$(APPSCAN_SECRET)
+      appscan analyze --scan-type sast --target .
+      appscan analyze --scan-type sca --target .
+    displayName: 'Run AppScan Scans'
+
+  - script: |
+      echo "Uploading results to AppScan Cloud..."
+      appscan upload --source ./scan-results --name "AzureDevOps_Scan"
+    displayName: 'Upload Scan Results'
+
+  - script: |
+      echo "Check the scan status..."
+      appscan status
+    displayName: 'Check Scan Status'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: ./scan-results
+      ArtifactName: ScanResults
+    displayName: 'Publish Scan Results'
