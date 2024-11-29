@@ -1,5 +1,5 @@
 name: "HCL AppScan CodeSweep"
-on: 
+on: push
 jobs:
   scan:
     runs-on: ubuntu-latest
